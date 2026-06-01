@@ -556,13 +556,10 @@ function estimerPrix(race) {
 // ── VÉRIFICATION DISPO ────────────────────────────────
 async function verifierDispo(isoStr) {
   try {
-    const res = await fetch(N8N_WEBHOOK, {
+    const res = await fetch(N8N_WEBHOOK + '?ToolCallName=verifier_disponibilite', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        query: { ToolCallName: 'verifier_disponibilite' },
-        body: { preferredTime: isoStr, serviceDuration: state.duree }
-      })
+      body: JSON.stringify({ preferredTime: isoStr, serviceDuration: state.duree })
     });
     return await res.json();
   } catch(e) {
@@ -702,21 +699,18 @@ async function showRecap() {
 async function finaliserRdv() {
   addTyping();
   try {
-    const res = await fetch(N8N_WEBHOOK, {
+    const res = await fetch(N8N_WEBHOOK + '?ToolCallName=reserver_rendez_vous', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        query: { ToolCallName: 'reserver_rendez_vous' },
-        body: {
-          name_caller: state.nom,
-          name_animal: state.animal_nom,
-          breed_animal: state.race || state.animal,
-          chosen_service: state.service,
-          estimated_price: state.prix,
-          important_information: state.allergies,
-          phone_caller: state.phone,
-          date_Time: state.date_iso
-        }
+        name_caller: state.nom,
+        name_animal: state.animal_nom,
+        breed_animal: state.race || state.animal,
+        chosen_service: state.service,
+        estimated_price: state.prix,
+        important_information: state.allergies,
+        phone_caller: state.phone,
+        date_Time: state.date_iso
       })
     });
     const result = await res.json();
