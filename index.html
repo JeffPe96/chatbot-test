@@ -489,11 +489,17 @@ async function processStep(value) {
     state.step = 'datetime';
   }
   else if (state.step === 'datetime_alt') {
-    if (value === state.alternative1 || value === state.alternative2) {
-      state.date_iso = value;
-      await confirmSlot(value);
-    } else {
+    if (value === 'autre') {
       await askDatetime();
+    } else if (value === state.alternative1 || value === state.alternative2) {
+      // Client chose an alternative - confirm directly without re-checking
+      state.date_iso = value;
+      state.date_label = formatISO(value);
+      await botSay('Parfait ! Le créneau du ' + state.date_label + ' est confirmé.');
+      await botSay('Pour finaliser, j'ai besoin de quelques informations. Votre prénom ?');
+      state.step = 'collect_nom';
+    } else {
+      await confirmSlot(value);
     }
   }
   else if (state.step === 'collect_nom') {
