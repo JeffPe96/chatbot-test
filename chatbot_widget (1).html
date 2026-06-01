@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Chatbot Widget</title>
+<style>
+/* ── PAGE DE TEST ── */
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #f0f0f0;
+  margin: 0;
+  padding: 40px;
+  min-height: 100vh;
+}
+.test-page {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+.test-page h1 { font-size: 28px; margin-bottom: 8px; }
+.test-page p { color: #666; line-height: 1.6; }
+
+/* ── WIDGET ── */
+:root {
+  --cyan: #00e5c8;
+  --dark: #0d1117;
+  --bg2: #141920;
+  --bg3: #1a2030;
+  --bg4: #212840;
+  --border: rgba(255,255,255,0.08);
+  --muted: #6b7280;
+  --white: #e8edf5;
+  --red: #ff5564;
+  --green: #00d48c;
+}
+
+/* Bouton flottant */
+#chatBtn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 60px;
+  height: 60px;
+  background: var(--cyan);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(0,229,200,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: transform .2s, box-shadow .2s;
+  z-index: 1000;
+}
+#chatBtn:hover { transform: scale(1.08); box-shadow: 0 6px 32px rgba(0,229,200,0.5); }
+#chatBtn.open { background: #ff5564; box-shadow: 0 4px 24px rgba(255,85,100,0.4); }
+
+/* Notification badge */
+#chatBadge {
+  position: fixed;
+  bottom: 76px;
+  right: 28px;
+  background: var(--red);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  z-index: 1001;
+  display: none;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+
+/* Fenêtre chat */
+#chatWindow {
+  position: fixed;
+  bottom: 100px;
+  right: 28px;
+  width: 360px;
+  height: 520px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  z-index: 999;
+  animation: slideUp .25s ease;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+#chatWindow.open { display: flex; }
+
+/* Header */
+.chat-header {
+  background: var(--bg2);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), #0099cc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.chat-header-info { flex: 1 }
+.chat-name { font-size: 13px; font-weight: 700; color: var(--white) }
+.chat-status { font-size: 11px; color: var(--cyan); display: flex; align-items: center; gap: 4px }
+.chat-status::before { content:''; width:6px; height:6px; background:var(--cyan); border-radius:50%; display:inline-block }
+.chat-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px; transition: .15s }
+.chat-close:hover { color: var(--white) }
+
+/* Messages */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+}
+.chat-messages::-webkit-scrollbar { width: 4px }
+.chat-messages::-webkit-scrollbar-track { background: transparent }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px }
+
+.msg {
+  display: flex;
+  gap: 8px;
+  animation: msgIn .2s ease;
+}
+@keyframes msgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.msg.user { flex-direction: row-reverse }
+.msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), #0099cc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.msg.user .msg-avatar { background: linear-gradient(135deg, #6366f1, #8b5cf6) }
+.msg-bubble {
+  max-width: 75%;
+  padding: 10px 13px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--white);
+}
+.msg.bot .msg-bubble { background: var(--bg3); border-bottom-left-radius: 4px }
+.msg.user .msg-bubble { background: linear-gradient(135deg, #00b4a0, #0099cc); border-bottom-right-radius: 4px }
+
+/* Typing indicator */
+.typing { display: flex; align-items: center; gap: 4px; padding: 10px 13px; background: var(--bg3); border-radius: 14px; border-bottom-left-radius: 4px; width: fit-content }
+.typing span { width: 6px; height: 6px; background: var(--muted); border-radius: 50%; animation: bounce .8s infinite }
+.typing span:nth-child(2) { animation-delay: .15s }
+.typing span:nth-child(3) { animation-delay: .3s }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+/* Options rapides */
+.quick-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 10px;
+}
+.quick-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--cyan);
+  cursor: pointer;
+  transition: .15s;
+  font-family: inherit;
+}
+.quick-btn:hover { background: var(--bg4); border-color: rgba(0,229,200,0.3) }
+
+/* Input zone */
+.chat-input-area {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.chat-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--white);
+  font-family: inherit;
+  outline: none;
+  resize: none;
+  max-height: 80px;
+  transition: .15s;
+  line-height: 1.4;
+}
+.chat-input:focus { border-color: rgba(0,229,200,0.3) }
+.chat-input::placeholder { color: var(--muted) }
+.chat-send {
+  width: 36px;
+  height: 36px;
+  background: var(--cyan);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: .15s;
+}
+.chat-send:hover { opacity: .85 }
+.chat-send:disabled { opacity: .4; cursor: default }
+.chat-send svg { width: 16px; height: 16px; fill: #000 }
+
+/* Confirmation card */
+.confirm-card {
+  background: var(--bg4);
+  border: 1px solid rgba(0,229,200,0.2);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 12px;
+  margin-top: 6px;
+}
+.confirm-row { display: flex; justify-content: space-between; padding: 3px 0; color: var(--muted) }
+.confirm-row span:last-child { color: var(--white); font-weight: 600 }
+.confirm-btns { display: flex; gap: 6px; margin-top: 10px }
+.confirm-btn { flex: 1; padding: 7px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; font-family: inherit; transition: .15s }
+.confirm-yes { background: var(--cyan); color: #000 }
+.confirm-no { background: var(--bg3); color: var(--white); border: 1px solid var(--border) }
+.confirm-yes:hover { opacity: .85 }
+.confirm-no:hover { background: var(--bg2) }
+</style>
+</head>
+<body>
+
+<!-- Page de test -->
+<div class="test-page">
+  <h1>🐾 AgencIA du Poil</h1>
+  <p>Salon de toilettage professionnel à Annecy. Nous prenons soin de vos animaux avec amour et expertise.</p>
+  <p>Horaires : Lundi–Samedi, 9h–18h</p>
+  <br>
+  <p style="color:#999;font-size:13px">💬 Cliquez sur le bouton en bas à droite pour prendre rendez-vous avec notre assistant IA.</p>
+</div>
+
+<!-- Badge notification -->
+<div id="chatBadge">Prenez RDV !</div>
+
+<!-- Bouton flottant -->
+<button id="chatBtn" onclick="toggleChat()" title="Prendre rendez-vous">💬</button>
+
+<!-- Fenêtre chat -->
+<div id="chatWindow">
+  <div class="chat-header">
+    <div class="chat-avatar">🐾</div>
+    <div class="chat-header-info">
+      <div class="chat-name">Assistant AgencIA du Poil</div>
+      <div class="chat-status">En ligne</div>
+    </div>
+    <button class="chat-close" onclick="toggleChat()">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="quick-options" id="quickOptions"></div>
+  <div class="chat-input-area">
+    <textarea class="chat-input" id="chatInput" placeholder="Écrivez votre message…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="chat-send" id="sendBtn" onclick="sendUserMessage()">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────
+const N8N_WEBHOOK = 'https://jeffpe96.app.n8n.cloud/webhook/maina-agencia-poil';
+const SALON_NAME = 'AgencIA du Poil';
+
+const SERVICES = {
+  'Service complet': { duree: 150, emoji: '✨' },
+  'Bain': { duree: 90, emoji: '🛁' },
+  'Bain + coupe': { duree: 120, emoji: '✂️' },
+  'Tonte': { duree: 90, emoji: '✂️' },
+  'Coupe des griffes': { duree: 15, emoji: '💅' },
+  'Toilettage chat': { duree: 60, emoji: '🐱' },
+  'Bain chat': { duree: 90, emoji: '🐱' },
+  'Toilettage NAC': { duree: 60, emoji: '🐹' }
+};
+
+const MOIS = {janvier:'01',février:'02',mars:'03',avril:'04',mai:'05',juin:'06',juillet:'07',août:'08',septembre:'09',octobre:'10',novembre:'11',décembre:'12'};
+
+// ── STATE ────────────────────────────────────────────
+let state = {
+  step: 'welcome',
+  animal: '',
+  race: '',
+  service: '',
+  duree: 0,
+  prix: '',
+  date_iso: '',
+  date_label: '',
+  nom: '',
+  animal_nom: '',
+  phone: '',
+  allergies: '',
+  alternative1: '',
+  alternative2: ''
+};
+
+let chatOpen = false;
+let badgeShown = false;
+
+// ── TOGGLE ───────────────────────────────────────────
+function toggleChat() {
+  chatOpen = !chatOpen;
+  const win = document.getElementById('chatWindow');
+  const btn = document.getElementById('chatBtn');
+  const badge = document.getElementById('chatBadge');
+  if (chatOpen) {
+    win.classList.add('open');
+    btn.classList.add('open');
+    btn.textContent = '✕';
+    badge.style.display = 'none';
+    if (state.step === 'welcome') startConversation();
+    setTimeout(() => document.getElementById('chatInput').focus(), 300);
+  } else {
+    win.classList.remove('open');
+    btn.classList.remove('open');
+    btn.textContent = '💬';
+  }
+}
+
+// ── BADGE auto-appear ────────────────────────────────
+setTimeout(() => {
+  if (!chatOpen) {
+    document.getElementById('chatBadge').style.display = 'block';
+    badgeShown = true;
+  }
+}, 3000);
+
+// ── MESSAGES ─────────────────────────────────────────
+function addMsg(text, sender, html) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + sender;
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = sender === 'bot' ? '🐾' : '👤';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  if (html) bubble.innerHTML = html;
+  else bubble.textContent = text;
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return bubble;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = 'typing';
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = '🐾';
+  const typing = document.createElement('div');
+  typing.className = 'typing';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  div.appendChild(avatar);
+  div.appendChild(typing);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+async function botSay(text, delay, html) {
+  await new Promise(r => setTimeout(r, delay || 400));
+  addTyping();
+  await new Promise(r => setTimeout(r, 800));
+  removeTyping();
+  addMsg(text, 'bot', html);
+}
+
+function setOptions(opts) {
+  const el = document.getElementById('quickOptions');
+  el.innerHTML = '';
+  opts.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'quick-btn';
+    btn.textContent = o.label || o;
+    btn.onclick = () => handleOption(o.value || o, o.label || o);
+    el.appendChild(btn);
+  });
+}
+
+function clearOptions() {
+  document.getElementById('quickOptions').innerHTML = '';
+}
+
+// ── CONVERSATION ─────────────────────────────────────
+async function startConversation() {
+  await botSay(`Bonjour et bienvenue chez ${SALON_NAME} ! 😊 Je suis votre assistant pour prendre rendez-vous. Quel type d'animal souhaitez-vous faire toiletter ?`);
+  setOptions(['Chien 🐕', 'Chat 🐱', 'NAC (lapin, cobaye…) 🐹']);
+  state.step = 'animal';
+}
+
+async function handleOption(value, label) {
+  clearOptions();
+  addMsg(label, 'user');
+  await processStep(value);
+}
+
+async function processStep(value) {
+  if (state.step === 'animal') {
+    state.animal = value.includes('Chat') ? 'Chat' : value.includes('NAC') ? 'NAC' : 'Chien';
+    if (state.animal === 'Chat') {
+      await botSay('Super ! Quel service souhaitez-vous pour votre chat ?');
+      setOptions([
+        { label: '🐱 Toilettage complet — 48€', value: 'Toilettage chat' },
+        { label: '🛁 Bain — 30€', value: 'Bain chat' },
+        { label: '💅 Coupe des griffes — 15€', value: 'Coupe des griffes' }
+      ]);
+      state.step = 'service';
+    } else if (state.animal === 'NAC') {
+      await botSay('Pour votre NAC, nous proposons un toilettage sans eau (tonte, fourrure, ongles) à 30€. Souhaitez-vous prendre ce rendez-vous ?');
+      state.service = 'Toilettage NAC';
+      state.duree = 60;
+      state.prix = '30€';
+      setOptions(['Oui, prendre RDV 📅', 'Coupe des griffes uniquement 💅']);
+      state.step = 'nac_confirm';
+    } else {
+      await botSay('Quelle est la race de votre chien ? (ex: Labrador, Golden Retriever, Caniche, Bichon…)');
+      state.step = 'race';
+    }
+  }
+  else if (state.step === 'race') {
+    state.race = value;
+    const prixEstime = estimerPrix(value);
+    state.prix = prixEstime;
+    await botSay(`Merci ! Quel service souhaitez-vous pour votre ${value} ?`);
+    setOptions([
+      { label: `✨ Service complet${prixEstime ? ' — ' + prixEstime : ''}`, value: 'Service complet' },
+      { label: '🛁 Bain', value: 'Bain' },
+      { label: '✂️ Bain + coupe', value: 'Bain + coupe' },
+      { label: '✂️ Tonte', value: 'Tonte' },
+      { label: '💅 Coupe des griffes — 15€', value: 'Coupe des griffes' }
+    ]);
+    state.step = 'service';
+  }
+  else if (state.step === 'service' || state.step === 'nac_confirm') {
+    if (value === 'Coupe des griffes uniquement 💅') value = 'Coupe des griffes';
+    if (value === 'Oui, prendre RDV 📅') { /* keep service */ } else {
+      state.service = value;
+      state.duree = SERVICES[value]?.duree || 60;
+    }
+    await botSay('Avez-vous une préférence pour le jour et l\'heure ? (ex: "mardi matin", "vendredi à 10h", "le plus tôt possible")');
+    state.step = 'datetime';
+  }
+  else if (state.step === 'datetime_alt') {
+    if (value === state.alternative1 || value === state.alternative2) {
+      state.date_iso = value;
+      await confirmSlot(value);
+    } else {
+      await askDatetime();
+    }
+  }
+  else if (state.step === 'collect_nom') {
+    state.nom = value;
+    await botSay(`Et le prénom de votre ${state.animal === 'Chat' ? 'chat' : state.animal === 'NAC' ? 'animal' : 'chien'} ?`);
+    state.step = 'collect_animal_nom';
+  }
+  else if (state.step === 'collect_animal_nom') {
+    state.animal_nom = value;
+    await botSay('Avez-vous des informations importantes à signaler ? (allergies, comportement, santé…)');
+    setOptions(['Aucune information particulière']);
+    state.step = 'collect_allergies';
+  }
+  else if (state.step === 'collect_allergies') {
+    state.allergies = value === 'Aucune information particulière' ? 'Aucune' : value;
+    await botSay('Votre numéro de téléphone ? (pour vous confirmer le rendez-vous)');
+    state.step = 'collect_phone';
+  }
+  else if (state.step === 'collect_phone') {
+    state.phone = value.replace(/\s/g, '');
+    await showRecap();
+  }
+  else if (state.step === 'confirm') {
+    if (value === 'oui') {
+      await finaliserRdv();
+    } else {
+      await botSay('Pas de problème ! Souhaitez-vous choisir un autre créneau ?');
+      setOptions(['Oui, changer le créneau', 'Non, annuler']);
+      state.step = 'restart';
+    }
+  }
+  else if (state.step === 'restart') {
+    if (value.includes('Oui')) {
+      await askDatetime();
+    } else {
+      await botSay('D\'accord, à bientôt ! N\'hésitez pas à revenir si vous souhaitez prendre rendez-vous. 😊');
+      state.step = 'done';
+    }
+  }
+}
+
+async function askDatetime() {
+  await botSay('Quel jour et quelle heure vous conviendraient ?');
+  state.step = 'datetime';
+}
+
+// ── ESTIMATION PRIX ───────────────────────────────────
+function estimerPrix(race) {
+  const r = race.toLowerCase();
+  if (r.includes('bichon')) return '65€';
+  if (r.includes('caniche') || r.includes('doodle') || r.includes('labradoodle')) return '~85-105€';
+  if (r.includes('poméranien') || r.includes('pomeranian')) return '55€';
+  if (r.includes('chihuahua') || r.includes('yorkshire') || r.includes('maltais')) return '45€';
+  if (r.includes('golden') || r.includes('labrador') || r.includes('berger') || r.includes('boxer')) return '85€';
+  if (r.includes('husky') || r.includes('malamute') || r.includes('akita')) return '140€';
+  if (r.includes('saint-bernard') || r.includes('montagne') || r.includes('grande')) return '110€';
+  return '';
+}
+
+// ── VÉRIFICATION DISPO ────────────────────────────────
+async function verifierDispo(isoStr) {
+  try {
+    const res = await fetch(N8N_WEBHOOK, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        query: { ToolCallName: 'verifier_disponibilite' },
+        body: { preferredTime: isoStr, serviceDuration: state.duree }
+      })
+    });
+    return await res.json();
+  } catch(e) {
+    return { available: false, message: 'Je rencontre un problème technique. Veuillez réessayer.' };
+  }
+}
+
+async function confirmSlot(isoStr) {
+  addTyping();
+  const result = await verifierDispo(isoStr);
+  removeTyping();
+
+  state.date_iso = isoStr;
+  const dateLabel = formatISO(isoStr);
+  state.date_label = dateLabel;
+
+  if (result.available) {
+    await botSay(`✅ Le créneau du ${dateLabel} est disponible !`);
+    await botSay('Pour finaliser, j\'ai besoin de quelques informations. Votre prénom ?');
+    state.step = 'collect_nom';
+  } else {
+    state.alternative1 = result.alternative1 || '';
+    state.alternative2 = result.alternative2 || '';
+    await botSay(result.message);
+    if (state.alternative1 || state.alternative2) {
+      const opts = [];
+      if (state.alternative1) opts.push({ label: '📅 ' + formatISO(state.alternative1), value: state.alternative1 });
+      if (state.alternative2) opts.push({ label: '📅 ' + formatISO(state.alternative2), value: state.alternative2 });
+      opts.push({ label: '🔄 Proposer une autre date', value: 'autre' });
+      setOptions(opts);
+      state.step = 'datetime_alt';
+    } else {
+      await askDatetime();
+    }
+  }
+}
+
+// ── FORMAT DATE ───────────────────────────────────────
+function formatISO(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso + (iso.includes('+') ? '' : '+02:00'));
+    return d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })
+      + ' à ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  } catch(e) { return iso; }
+}
+
+// ── PARSE DATE FROM TEXT ──────────────────────────────
+function parseDateText(text) {
+  const now = new Date();
+  const t = text.toLowerCase().trim();
+
+  // Heure extraite
+  let heure = 10;
+  const heureMatch = t.match(/(\d{1,2})h(\d{0,2})/);
+  if (heureMatch) {
+    heure = parseInt(heureMatch[1]);
+    if (heure < 9 || heure > 17) heure = 10;
+  } else if (t.includes('matin')) heure = 10;
+  else if (t.includes('après-midi') || t.includes('apres-midi') || t.includes('après midi')) heure = 14;
+
+  // Jour extrait
+  const jours = ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  let targetDate = null;
+
+  if (t.includes('demain')) {
+    targetDate = new Date(now);
+    targetDate.setDate(now.getDate() + 1);
+  } else if (t.includes('après-demain') || t.includes('apres-demain')) {
+    targetDate = new Date(now);
+    targetDate.setDate(now.getDate() + 2);
+  } else if (t.includes('plus tôt') || t.includes('tot') || t.includes('prochain')) {
+    targetDate = new Date(now);
+    targetDate.setDate(now.getDate() + 1);
+    // Skip dimanche
+    if (targetDate.getDay() === 0) targetDate.setDate(targetDate.getDate() + 1);
+  } else {
+    for (let j = 0; j < jours.length; j++) {
+      if (t.includes(jours[j])) {
+        const jourCible = j + 1; // 1=lundi
+        const jourActuel = now.getDay() === 0 ? 7 : now.getDay();
+        let diff = jourCible - jourActuel;
+        if (diff <= 0) diff += 7;
+        targetDate = new Date(now);
+        targetDate.setDate(now.getDate() + diff);
+        break;
+      }
+    }
+  }
+
+  if (!targetDate) {
+    // Date numérique ex: "le 5 juin"
+    const dateMatch = t.match(/(\d{1,2})\s+(\w+)/);
+    if (dateMatch) {
+      const jour = parseInt(dateMatch[1]);
+      const moisStr = dateMatch[2].toLowerCase();
+      const moisNum = MOIS[moisStr];
+      if (moisNum) {
+        const annee = now.getFullYear();
+        targetDate = new Date(`${annee}-${moisNum}-${String(jour).padStart(2,'0')}`);
+        if (targetDate < now) targetDate.setFullYear(annee + 1);
+      }
+    }
+  }
+
+  if (!targetDate) return null;
+
+  const p = n => String(n).padStart(2,'0');
+  return `${targetDate.getFullYear()}-${p(targetDate.getMonth()+1)}-${p(targetDate.getDate())}T${p(heure)}:00:00`;
+}
+
+// ── RECAP + CONFIRMATION ──────────────────────────────
+async function showRecap() {
+  state.step = 'confirm';
+  const html = `
+    Voici le récapitulatif de votre rendez-vous :
+    <div class="confirm-card">
+      <div class="confirm-row"><span>📅 Date</span><span>${state.date_label}</span></div>
+      <div class="confirm-row"><span>🐾 Animal</span><span>${state.animal_nom} (${state.race || state.animal})</span></div>
+      <div class="confirm-row"><span>✂️ Service</span><span>${state.service}</span></div>
+      ${state.prix ? '<div class="confirm-row"><span>💶 Tarif estimé</span><span>' + state.prix + '*</span></div>' : ''}
+      <div class="confirm-row"><span>👤 Propriétaire</span><span>${state.nom}</span></div>
+      <div class="confirm-row"><span>📞 Téléphone</span><span>${state.phone}</span></div>
+      ${state.allergies !== 'Aucune' ? '<div class="confirm-row"><span>⚠️ Infos</span><span>' + state.allergies + '</span></div>' : ''}
+      <div class="confirm-btns">
+        <button class="confirm-btn confirm-yes" onclick="handleOption('oui','✅ Confirmer')">✅ Confirmer</button>
+        <button class="confirm-btn confirm-no" onclick="handleOption('non','❌ Modifier')">❌ Modifier</button>
+      </div>
+    </div>
+    ${state.prix ? '<small style="color:var(--muted);font-size:11px">* Tarif estimé, confirmé sur place.</small>' : ''}
+  `;
+  addMsg('', 'bot', html);
+  document.getElementById('chatMessages').scrollTop = 99999;
+}
+
+// ── RÉSERVATION ───────────────────────────────────────
+async function finaliserRdv() {
+  addTyping();
+  try {
+    const res = await fetch(N8N_WEBHOOK, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        query: { ToolCallName: 'reserver_rendez_vous' },
+        body: {
+          name_caller: state.nom,
+          name_animal: state.animal_nom,
+          breed_animal: state.race || state.animal,
+          chosen_service: state.service,
+          estimated_price: state.prix,
+          important_information: state.allergies,
+          phone_caller: state.phone,
+          date_Time: state.date_iso
+        }
+      })
+    });
+    const result = await res.json();
+    removeTyping();
+    if (result.success) {
+      await botSay(`🎉 Parfait ! Votre rendez-vous est confirmé pour ${state.date_label}. Nous avons hâte de prendre soin de ${state.animal_nom} ! À bientôt 😊`);
+    } else {
+      await botSay('Je rencontre un petit souci technique. Veuillez réessayer ou nous appeler directement.');
+    }
+  } catch(e) {
+    removeTyping();
+    await botSay('Je rencontre un problème technique. Veuillez réessayer ou nous appeler directement.');
+  }
+  state.step = 'done';
+  clearOptions();
+  document.getElementById('chatInput').disabled = true;
+  document.getElementById('sendBtn').disabled = true;
+}
+
+// ── INPUT HANDLING ────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendUserMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 80) + 'px';
+}
+
+async function sendUserMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  clearOptions();
+  addMsg(text, 'user');
+
+  if (state.step === 'datetime' || state.step === 'datetime_alt') {
+    if (state.step === 'datetime_alt' && (text === state.alternative1 || text === state.alternative2)) {
+      await confirmSlot(text);
+      return;
+    }
+    const iso = parseDateText(text);
+    if (iso) {
+      await confirmSlot(iso);
+    } else {
+      await botSay('Je n\'ai pas bien compris la date. Pouvez-vous préciser ? (ex: "mardi à 10h", "jeudi matin", "le 15 juin à 14h")');
+    }
+  } else {
+    await processStep(text);
+  }
+}
+</script>
+</body>
+</html>
