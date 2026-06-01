@@ -496,7 +496,7 @@ async function processStep(value) {
       state.date_iso = value;
       state.date_label = formatISO(value);
       await botSay('Parfait ! Le créneau du ' + state.date_label + ' est confirmé.');
-      await botSay('Pour finaliser, j'ai besoin de quelques informations. Votre prénom ?');
+      await botSay("Pour finaliser, j'ai besoin de quelques informations. Votre prénom ?");
       state.step = 'collect_nom';
     } else {
       await confirmSlot(value);
