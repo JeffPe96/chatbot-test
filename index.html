@@ -83,7 +83,7 @@ body {
   bottom: 100px;
   right: 28px;
   width: 360px;
-  height: 520px;
+  height: min(520px, calc(100vh - 140px));
   background: var(--dark);
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -519,7 +519,12 @@ async function processStep(value) {
     state.step = 'collect_phone';
   }
   else if (state.step === 'collect_phone') {
-    state.phone = value.replace(/\s/g, '');
+    let phoneVal = value.replace(/[\s\-\.]/g, '');
+  // Ensure French numbers keep leading zero
+  if (phoneVal.length === 9 && !phoneVal.startsWith('0') && !phoneVal.startsWith('+')) {
+    phoneVal = '0' + phoneVal;
+  }
+  state.phone = phoneVal;
     await showRecap();
   }
   else if (state.step === 'confirm') {
@@ -673,6 +678,16 @@ function parseDateText(text) {
 
   if (!targetDate) return null;
 
+  // Skip Sunday
+  if (targetDate.getDay() === 0) targetDate.setDate(targetDate.getDate() + 1);
+  
+  // If date is in the past or today before the requested hour, push to next week
+  const now2 = new Date();
+  now2.setHours(heure, 0, 0, 0);
+  while (targetDate <= now2) {
+    targetDate.setDate(targetDate.getDate() + 7);
+  }
+
   const p = n => String(n).padStart(2,'0');
   return `${targetDate.getFullYear()}-${p(targetDate.getMonth()+1)}-${p(targetDate.getDate())}T${p(heure)}:00:00`;
 }
@@ -691,7 +706,7 @@ async function showRecap() {
       <div class="confirm-row"><span>📞 Téléphone</span><span>${state.phone}</span></div>
       ${state.allergies !== 'Aucune' ? '<div class="confirm-row"><span>⚠️ Infos</span><span>' + state.allergies + '</span></div>' : ''}
       <div class="confirm-btns">
-        <button class="confirm-btn confirm-yes" onclick="handleOption('oui','✅ Confirmer')">✅ Confirmer</button>
+        <button class="confirm-btn confirm-yes" id="confirmYesBtn" onclick="this.disabled=true;this.textContent='⏳ En cours...';handleOption('oui','✅ Confirmer')">✅ Confirmer</button>
         <button class="confirm-btn confirm-no" onclick="handleOption('non','❌ Modifier')">❌ Modifier</button>
       </div>
     </div>
