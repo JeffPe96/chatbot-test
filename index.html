@@ -330,7 +330,8 @@ let state = {
   phone: '',
   allergies: '',
   alternative1: '',
-  alternative2: ''
+  alternative2: '',
+  sending: false
 };
 
 let chatOpen = false;
@@ -718,6 +719,8 @@ async function showRecap() {
 
 // ── RÉSERVATION ───────────────────────────────────────
 async function finaliserRdv() {
+  if (state.sending) return;
+  state.sending = true;
   addTyping();
   try {
     const res = await fetch(N8N_WEBHOOK, {
