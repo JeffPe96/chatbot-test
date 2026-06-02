@@ -302,23 +302,44 @@ Pour PRENDRE un RDV :
 3. Déterminer serviceDuration selon les tableaux
 4. Demander le jour et l'heure préférés
 5. Appeler verifier_disponibilite — le résultat t'indiquera si c'est disponible ou proposera des alternatives
-6. Si disponible : collecter nom propriétaire, nom animal, informations importantes (allergies, comportement), numéro de téléphone
-7. Récapituler et demander confirmation explicite
+6. Si disponible : collecter nom complet propriétaire, nom animal, informations importantes (allergies, comportement), numéro de téléphone
+7. Récapituler et demander confirmation explicite avec un récapitulatif formaté
 8. Appeler reserver_rendez_vous avec tous les champs
 9. Confirmer et souhaiter bonne journée
 
 Pour MODIFIER un RDV :
-1. Demander nom propriétaire et nom animal
-2. Demander la nouvelle date/heure souhaitée
-3. Appeler verifier_disponibilite
-4. Si disponible, appeler modifier_rendez_vous
+1. Demander le nom complet du propriétaire
+2. Appeler chercher_rdv pour trouver ses rendez-vous
+3. Afficher les RDV trouvés et demander confirmation du RDV à modifier
+4. Demander la nouvelle date/heure souhaitée
+5. Appeler verifier_disponibilite avec le serviceDuration du service existant
+6. Si disponible, appeler modifier_rendez_vous avec chosen_service inclus
+7. Confirmer la modification
 
 Pour ANNULER un RDV :
-1. Demander nom propriétaire, nom animal et date du RDV
-2. Confirmer avec le client
-3. Appeler annuler_rendez_vous
+1. Demander le nom complet du propriétaire
+2. Appeler chercher_rdv pour trouver ses rendez-vous
+3. Afficher les RDV trouvés et demander confirmation du RDV à annuler
+4. Appeler annuler_rendez_vous après confirmation explicite
+5. Confirmer l'annulation
+
+RÉCAPITULATIF OBLIGATOIRE
+Avant chaque confirmation de RDV (prise ou modification), génère un récapitulatif structuré avec ce format exact (utilise des emojis et une ligne par information) :
+📋 Récapitulatif de votre rendez-vous
+📅 Date : [date]
+🐾 Animal : [nom] ([race])
+✂️ Service : [service]
+💶 Tarif estimé : [prix]*
+👤 Propriétaire : [nom]
+📞 Téléphone : [numéro]
+⚠️ Notes : [infos importantes ou "Aucune"]
+* Tarif confirmé sur place par le toiletteur.
+Confirmez-vous ce rendez-vous ?
 
 OUTILS DISPONIBLES (appelle-les en JSON dans ta réponse quand nécessaire)
+Pour chercher les RDV d'un client :
+{"tool": "chercher_rdv", "name": "Jefferson De La Cruz"}
+
 Pour vérifier une disponibilité :
 {"tool": "verifier_disponibilite", "preferredTime": "2026-06-10T10:00:00", "serviceDuration": 150}
 
@@ -450,7 +471,14 @@ async function callClaude(userMessage) {
 async function callN8nTool(toolData) {
   const toolName = toolData.tool;
   delete toolData.tool;
-  
+
+  // chercher_rdv uses a different webhook
+  if (toolName === 'chercher_rdv') {
+    const name = encodeURIComponent(toolData.name || '');
+    const res = await fetch('https://jeffpe96.app.n8n.cloud/webhook/rdv-client?name=' + name);
+    return await res.json();
+  }
+
   const res = await fetch(N8N_WEBHOOK, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
