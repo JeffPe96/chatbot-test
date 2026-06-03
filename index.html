@@ -392,7 +392,91 @@ setTimeout(() => {
 }, 3000);
 
 // ── MESSAGES UI ───────────────────────────────────────────
+function renderMarkdown(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+function isRecapitulatif(text) {
+  return text.includes('📋') && text.includes('📅') && text.includes('Confirmez-vous');
+}
+
+function renderRecap(text, sender) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + sender;
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = '🐾';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.style.maxWidth = '90%';
+  bubble.style.padding = '0';
+  bubble.style.background = 'transparent';
+
+  // Parse recap lines
+  const lines = text.split('\n').filter(function(l){return l.trim();});
+  const titleLine = lines.find(l => l.includes('📋')) || '';
+  const dataLines = lines.filter(l => /[📅🐾✂️💶👤📞⚠️]/.test(l) && !l.includes('📋'));
+  const confirmLine = lines.find(l => l.includes('Confirmez-vous')) || '';
+  const noteLine = lines.find(l => l.includes('* Tarif')) || '';
+
+  let html = `<div style="background:var(--bg3);border:1px solid rgba(0,229,200,0.2);border-radius:14px;overflow:hidden">
+    <div style="background:rgba(0,229,200,0.08);padding:10px 14px;font-size:12px;font-weight:700;color:var(--cyan);border-bottom:1px solid rgba(0,229,200,0.15)">${titleLine.replace('📋','📋').trim()}</div>
+    <div style="padding:10px 14px">`;
+  
+  dataLines.forEach(line => {
+    const parts = line.split(':');
+    if (parts.length >= 2) {
+      const label = parts[0].trim();
+      const value = parts.slice(1).join(':').trim();
+      html += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px">
+        <span style="color:var(--muted)">${label}</span>
+        <span style="color:var(--white);font-weight:600;text-align:right;max-width:60%">${value}</span>
+      </div>`;
+    }
+  });
+
+  if (noteLine) {
+    html += `<div style="font-size:10px;color:var(--muted);margin-top:6px">${noteLine}</div>`;
+  }
+
+  html += `</div>
+    <div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,0.05)">
+      <div style="font-size:12px;color:var(--white);margin-bottom:8px">${confirmLine}</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="confirmRecap(this)" style="flex:1;background:var(--cyan);border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;color:#000;cursor:pointer;font-family:inherit">✅ Confirmer</button>
+        <button onclick="cancelRecap(this)" style="flex:1;background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;color:var(--white);cursor:pointer;font-family:inherit">❌ Modifier</button>
+      </div>
+    </div>
+  </div>`;
+
+  bubble.innerHTML = html;
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function confirmRecap(btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳ En cours...';
+  btn.closest('.msg').querySelector('button:last-child').disabled = true;
+  addMsg('✅ Confirmer', 'user');
+  processUserMessage('Je confirme');
+}
+
+function cancelRecap(btn) {
+  addMsg('❌ Modifier', 'user');
+  processUserMessage('Je souhaite modifier');
+}
+
 function addMsg(text, sender) {
+  if (sender === 'bot' && isRecapitulatif(text)) {
+    renderRecap(text, sender);
+    return;
+  }
   const msgs = document.getElementById('chatMessages');
   const div = document.createElement('div');
   div.className = 'msg ' + sender;
@@ -401,7 +485,11 @@ function addMsg(text, sender) {
   avatar.textContent = sender === 'bot' ? '🐾' : '👤';
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
-  bubble.textContent = text;
+  if (sender === 'bot') {
+    bubble.innerHTML = renderMarkdown(text);
+  } else {
+    bubble.textContent = text;
+  }
   div.appendChild(avatar);
   div.appendChild(bubble);
   msgs.appendChild(div);
