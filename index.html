@@ -382,7 +382,7 @@ RÈGLES IMPORTANTES
 - Après avoir reçu le résultat d'un outil, réponds naturellement en français
 - Si un outil échoue, dire "J'ai un petit souci technique, laissez-moi réessayer" et réessayer une fois
 
-DATE ACTUELLE : ${new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}`;
+DATE ACTUELLE : ${new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'})} | DATE ISO : ${new Date().toISOString().split('T')[0]} | JOUR JS : ${new Date().getDay()} (0=dim,6=sam) - Utilise la DATE ISO pour calculer les prochains jours exactement.`;
 
 // ── STATE ────────────────────────────────────────────────
 let chatOpen = false;
