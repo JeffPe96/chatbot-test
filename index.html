@@ -263,44 +263,47 @@ Pause déjeuner : entre 12h et 14h (au moins 1h libre garantie)
 
 TARIFS ET DURÉES OFFICIELS
 
-CHIENS — Service complet (brossage, bain, tonte, griffes, oreilles)
-- Petit (S) moins de 5kg — 1h15 (75min) — 45€
-- Moyen (M) 5 à 10kg — 1h45 (105min) — 60€
-- Grand (L) 10 à 20kg — 2h30 (150min) — 85€ (Golden, Labrador, Berger Allemand, Boxer)
-- Géant (XL) plus de 20kg — 3h15 (195min) — 110€ (Saint-Bernard, Terre-Neuve, Mastiff)
+CHIENS — Services disponibles :
 
-Suppléments chiens (s'ajoutent au service complet) :
-- Caniche / Doodle / poil frisé : +20€ et +45min (Caniche, Doodle, Maltipoo)
-- Bichon (frisé, maltais, Bolonais) : forfait 65€ — 2h (120min)
-- Poméranien : forfait 55€ — 1h30 (90min)
-- Forfait mue (Husky, Malamute, Akita, Samoyède) : +55€ — +1h (150min total)
-- Shampooing bio (peau sensible, allergie) : +7€
+Service complet (brossage, bain, tonte, griffes, oreilles) :
+- Petit (S) <5kg : 45€ — 75min | Moyen (M) 5-10kg : 60€ — 105min
+- Grand (L) 10-20kg : 85€ — 150min | Géant (XL) >20kg : 110€ — 195min
+- Bichon : 65€ — 120min | Caniche/Doodle : base+20€ +45min | Poméranien : 55€ — 90min | Forfait mue : +55€ +60min
+
+Bain (brossage, bain, séchage) :
+- Petit : 25€ — 90min | Moyen : 35€ — 90min | Grand : 45€ — 120min | Géant : 55€ — 120min
+
+Bain + coupe (bain + coupe pattes/yeux/oreilles) :
+- Petit : 40€ — 120min | Moyen : 55€ — 120min | Grand : 70€ — 150min | Géant : 90€ — 150min
+
+Tonte (tonte corps seule) :
+- Petit : 40€ — 90min | Moyen : 55€ — 120min | Grand : 70€ — 120min | Géant : 85€ — 150min
+
+Bain + tonte (bain + tonte complète) :
+- Petit : 55€ — 120min | Moyen : 70€ — 150min | Grand : 90€ — 150min | Géant : 110€ — 180min
+
+UPSELL (une seule fois, sans insister) : Si bain/tonte/bain+coupe demandé, propose le service complet avec la différence de prix. Si griffes seules : ne pas proposer d'upsell.
 
 CHATS
-- Toilettage complet (démêlage, tonte hygiénique, yeux) : 48€ — 1h (60min)
-- Bain (shampooing adapté, séchage, ongles) : 30€ — 1h30 (90min)
+- Toilettage complet (démêlage, tonte hygiénique, yeux) : 48€ — 60min
+- Bain (shampooing adapté, séchage, ongles) : 30€ — 90min
+- Coupe griffes : 15€ — 15min
 
 NAC — Rongeurs uniquement (lapin, cobaye)
-- Toilettage sans eau (tonte, fourrure, ongles, yeux) : 30€ — 1h (60min)
-- INTERDICTION ABSOLUE de proposer un bain pour un rongeur (risque d'arrêt cardiaque)
+- Toilettage sans eau (tonte, fourrure, ongles, yeux) : 30€ — 60min
+- Coupe griffes : 15€ — 15min
+- INTERDICTION ABSOLUE de bain pour rongeur (arrêt cardiaque)
 
 SERVICES RAPIDES
-- Coupe des griffes (chien, chat, rongeur) : 15€ — 15min
+- Coupe griffes (chien, chat, rongeur) : 15€ — 15min
 
-DURÉES PAR SERVICE (serviceDuration en minutes pour verifier_disponibilite)
-Petit chien service complet : 75
-Moyen chien service complet : 105
-Grand chien service complet : 150
-Géant chien service complet : 195
-Caniche/poil frisé petit : 120
-Caniche/poil frisé moyen : 150
-Bichon : 120
-Poméranien : 90
-Forfait mue : 150
-Chat toilettage : 60
-Chat bain : 90
-NAC toilettage : 60
-Coupe griffes : 15
+DURÉES serviceDuration en minutes :
+Service complet S:75, M:105, L:150, XL:195, Bichon:120, Caniche M:150, Poméranien:90, Mue:150
+Bain S:90, M:90, L:120, XL:120
+Bain+coupe S:120, M:120, L:150, XL:150
+Tonte S:90, M:120, L:120, XL:150
+Bain+tonte S:120, M:150, L:150, XL:180
+Chat toilettage:60, Chat bain:90, NAC:60, Griffes:15
 
 RACE INCONNUE
 Si la race n'est pas dans les tableaux :
@@ -365,8 +368,8 @@ Pour vérifier une disponibilité :
 {"tool": "verifier_disponibilite", "preferredTime": "2026-06-10T10:00:00", "serviceDuration": 150}
 
 Pour réserver :
-{"tool": "reserver_rendez_vous", "name_caller": "...", "name_animal": "...", "breed_animal": "...", "chosen_service": "Service complet - Grand (L)", "estimated_price": "85", "important_information": "...", "phone_caller": "...", "date_Time": "2026-06-10T10:00:00", "serviceDuration": 150}
-Note: chosen_service doit inclure la catégorie de taille pour les chiens (ex: "Service complet - Petit (S)", "Service complet - Moyen (M)", "Service complet - Grand (L)", "Service complet - Géant (XL)", "Service complet - Bichon", "Service complet - Caniche"). serviceDuration doit être la durée exacte en minutes selon les tableaux.
+{"tool": "reserver_rendez_vous", "name_caller": "...", "name_animal": "...", "breed_animal": "...", "chosen_service": "Bain - Grand (L)", "estimated_price": "45", "important_information": "...", "phone_caller": "...", "date_Time": "2026-06-10T10:00:00", "serviceDuration": 120}
+Note: chosen_service = NOM_SERVICE + " - " + TAILLE pour les chiens (ex: "Service complet - Grand (L)", "Bain - Moyen (M)", "Tonte - Petit (S)", "Bain + coupe - Grand (L)"). Pour chats/NAC pas de taille. serviceDuration = minutes exacts selon les tableaux. estimated_price = prix en chiffres uniquement (ex: "85" pas "85€").
 
 Pour modifier :
 {"tool": "modifier_rendez_vous", "name_caller": "...", "name_animal": "...", "old_date_Time": "...", "new_date_Time": "...", "chosen_service": "Service complet - Grand (L)", "serviceDuration": 150}
